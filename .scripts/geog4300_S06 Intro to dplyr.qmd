@@ -1,14 +1,17 @@
 ---
-title: "Filter, group_by, and summarise"
+title: "Introduction to dplyr"
 format: html
+editor_options: 
+  chunk_output_type: console
 ---
 
-The 'dplyr' package is a core part of the tidyverse and the main tool used for basic data wrangling. In this script, we'll go over filter, mutate, count, group_by and summarise.
+The `dplyr` package is a core part of the tidyverse and the main tool used for basic data wrangling. In this script, we'll learn how to use the dplyr functions filter(), mutate(), group_by(), summarise(), count(), and select() for data wrangling.
 
 To do so, let's load just `dplyr` (and `readr`) and the county census data we've been working with.
 
 ```{r}
 library(dplyr)
+
 library(readr) #To read the file
 
 #If you've got the data in your working folder in a "data" subfolder
@@ -55,17 +58,39 @@ Counties in the Southeast or Northeast with high poverty rates:
 census_data_elites1<-census_data %>%
   filter(region=="NE" | region=="SE") %>%
   filter(BADeg_pct > 25)
-table(census_data_elites1$St_name)
+table(census_data_elites1$st_name)
 ```
 
 ## You try it!!
-Filter all counties with a poverty rate (pov_pop_pct) > 20% (BADeg_pct)
+Filter all counties with a poverty rate (pov_pop_pct) > 20%
 Call this census_data_pov
 
 
 # Group_by, summarise, count, select, and mutate
 
-One core `dplyr` function is `mutate`, which is how we create new variables. Let's sum HSGrad_pct and SomeCol_pct to get a single count for both.
+The `select` function allows you to keep only the variables (columns) you need. You can select by column names or numbers
+
+```{r}
+names(census_data)
+
+census_data_pov<-census_data %>%
+  select(cty_fips,st_name,region,pov_pop_pct)
+```
+
+Use a `:` to select a range of variable names. Let's select just educational variables
+
+```{r}
+census_data_ed<-census_data %>%
+  select(cty_fips,st_name,region,LessHS_pct:GradDeg_pct)
+```
+
+What does that dataset look like?
+
+```{r}
+head(census_data_ed)
+```
+
+A core `dplyr` function is `mutate`, which is how we create new variables. Let's sum HSGrad_pct and SomeCol_pct to create a new variable representing the percentage of adults with a high school diploma or some college but not a bachelor's degree.
 
 ```{r}
 census_data_ed<-census_data_ed %>%
@@ -97,27 +122,38 @@ census_data_elites_tbl1<-census_data_elites %>%
   summarise(count=n())
 ```
 
-The `select` command allows you to reduce the number of variables/columns in your data. You can select by column names or numbers
+# Joins
+You can connect data frames when they share common variables. For example, you could connect this census data to data on climactic conditions. Let's load a dataset of monthly median observations from Daymet.
 
 ```{r}
-names(census_data)
-
-census_data_pov<-census_data %>%
-  select(GEOID,st_name,region,pov_pop_pct)
+daymet_cty<-read_csv("data/daymet_monthly_median_2010-2021.csv")
 ```
 
-Use a `:` to select a range of variable names. Let's select just educational variables
+Both this dataset and the county data have a FIPS code for the county. It's `cty_txt` and `cty_fips` respectively. The trouble is that the first of those has a "G" in front of the five digit code. Let's add that to cty_fips using `paste0`, which pastes (concatenates) strings together. We can then use `left_join` to join the two datasets.
 
 ```{r}
-census_data_ed<-census_data %>%
-  select(GEOID,st_name,region,LessHS_pct:GradDeg_pct)
+census2<-census_data %>%
+  mutate(cty_txt=paste0("G",cty_fips)) %>%
+  select(cty_txt,LessHS_pct:GradDeg_pct) #What does this line do?
+
+daymet_census<-daymet_cty %>%
+  filter(date=="Y2020-1") %>% #What does this line do?
+  left_join(census2)
 ```
 
-What does that dataset look like?
+There are other kinds of joins! What do these do? How are they different?
+See also: https://statisticsglobe.com/r-dplyr-join-inner-left-right-full-semi-anti 
 
 ```{r}
-head(census_data_ed)
+daymet_census<-daymet_cty %>%
+  filter(date=="Y2020-1") %>% 
+  anti_join(census2)
+
+daymet_census<-daymet_cty %>%
+  filter(date=="Y2020-1") %>%
+  inner_join(census2)
 ```
+
 
 ## You try it! 
 Information about Taylor Swift and Beyonce songs on Spotify is available in the course data folder: swift_beyonce_spotify.csv
