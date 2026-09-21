@@ -19,7 +19,7 @@ A common part of data wrangling is combining or splitting variables for use in a
 Let's start with the Waffle House dataset from Safegraph, a point-of-interest provider who aggregates GPS location data from multiple cellphone companies.
 
 ```{r}
-whdata<-read_csv("data/whdata_dec21_mar22.csv")
+whdata<-read_csv("~/Downloads/whdata_dec21_mar22.csv")
 ```
 
 Right now, the dataset includes the address of each store in one column. However, sometimes we want to separate the house number from the name of the street. To do so, we need a separator. This can include some kind of punctuation (e.g., comma, dash, period), but even just a space can do. Here's how you could use that with separate:
@@ -42,7 +42,8 @@ To *unite* data, we can simply list the variables we want to combine together. S
 
 ```{r}
 whdata_3<-whdata %>%
-  unite(fulladd,c(street_address,city,region),sep = ", ")
+  unite(fulladd,c(street_address,city,region),sep = ", ") #concatenation of multiple existing string/text into one value. Underscore is the default
+#Paste is more like excel's concatenate
 ```
 
 Note that this removes all the component columns by default. We can use the `remove` parameter to keep them.
@@ -58,13 +59,32 @@ Lastly, `paste` is an all purpose function similar to unite that's used to conca
 whdata_5<-whdata %>%
   mutate(descript=paste0(location_name," is located at ",street_address,
                         " which is in the city of ",city,", ",region,"."))
+
+#paste adds a space in between the things, Paste0 does not automatically add a space in between the things. A way to tie text together
 ```
 
 #####You try it!
 The `bucketed_dwell_times` variable lists how many minutes people stayed at Waffle House. Use separate to divide those times into distinct columns.
 
 ```{r}
-
+whdata_bucket<-whdata %>%
+  separate(bucketed_dwell_times,into=c("TUnder5","T5_10","T11_20","T21_60","T61_120","T121_240","TOver240"),sep=",") %>%
+  separate(TUnder5,into=c("AA","TUnder5"),sep=":") %>%
+  select(-AA) %>%
+  separate(T5_10,into=c("BB","T5_10"),sep=":") %>%
+  select(-BB) %>%
+  separate(T11_20,into=c("CC","T11_20"),sep=":") %>%
+  select(-CC) %>%
+  separate(T21_60,into=c("DD","T21_60"),sep=":") %>%
+  select(-DD) %>%
+  separate(T61_120,into=c("EE","T61_120"),sep=":") %>%
+  select(-EE) %>%
+  separate(T121_240,into=c("FF","T121_240"),sep=":") %>%
+  select(-FF) %>%
+  separate(TOver240,into=c("GG","TOver240"),sep=":") %>%
+  select(-GG) %>%
+  separate(TOver240,into=c("TOver240","GG"),sep="}") %>%
+  select(-GG) 
 ```
 
 Look through the list of functions in the `tidyr` package. You can either search for its documentation online or look it up in the "Packages" tab in the lower left panel of Rstudio. What are one or two other functions that you think could be useful?

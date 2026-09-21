@@ -22,7 +22,7 @@ The main way to read in data using sf is the function `st_read`, which uses gdal
 Let's load six core Atlanta counties.
 
 ```{r}
-ga_cty<-st_read("data/ACSCtyData_2022ACS_simplify.gpkg") %>% 
+ga_cty<-st_read("~/Downloads/ACSCtyData_2022ACS_simplify.gpkg") %>% 
   st_transform(4326) %>%
   filter(st_name=="Georgia")
 ```
@@ -30,7 +30,7 @@ ga_cty<-st_read("data/ACSCtyData_2022ACS_simplify.gpkg") %>%
 For this analysis, we'll be looking at Waffle Houses in the Atlanta metro. We will read in a csv file with a national dollar store listing, select only those identified as being in Atlanta and still open (no end year). Lastly, we will use st_as_sf to convert to spatial data.
 
 ```{r}
-wh_stores<-read_csv("data/wh_locations_coords.csv") %>%
+wh_stores<-read_csv("~/Downloads/wh_locations_coords.csv") %>%
   st_as_sf(coords=c("Longitude","Latitude"), #Identify the coordinate variables
            crs=4326, #Identify the projection (4326 is WGS84)
            remove=FALSE) %>% #Don't remove the coordinate variables
