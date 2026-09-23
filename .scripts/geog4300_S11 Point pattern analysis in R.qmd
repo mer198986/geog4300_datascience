@@ -12,10 +12,10 @@ library(sf)
 library(tmap)
 library(tmaptools)
 
-dollars<-read_csv("data/dollars.csv") %>%
+dollars<-read_csv("~/Downloads/dollars.csv") %>%
   st_as_sf(coords=c("x","y"),crs=4326)
 
-atl_pumas<-st_read("data/atl_pumas.gpkg")
+atl_pumas<-st_read("~/Downloads/atl_pumas.gpkg")
 ```
 
 
@@ -24,9 +24,9 @@ atl_pumas<-st_read("data/atl_pumas.gpkg")
 The spatialEco package has a "nni" function that allows you to easily calculate the Nearest Neighbor Index, a measure of spatial clustering. The NNI and z-score tell you the index and a measure of significance--generally any absolute value higher than 1.96 or lower than -1.96 would be significant.
 
 ```{r}
-#install.packages("spatialEco")
+install.packages("spatialEco")
 #NEW: YOU NEED TO INSTALL spatstat
-#install.packages("spatstat")
+install.packages("spatstat")
 library(spatialEco)
 
 nni(dollars)
@@ -37,6 +37,15 @@ Create new data frames from the dollar store dataset for Family Dollar and Dolla
 
 ```{r}
 
+fd_stores<-dollars%>%
+  filter(dollar_type=="Family Dollar")
+
+dg_stores<-dollars%>%
+  filter(dollar_type=="Dollar General")
+
+nni(fd_stores)
+
+nni(dg_stores)
 ```
 
 
@@ -103,6 +112,26 @@ Calculate the percentage of stores that are Dollar Generals and Dollar Trees in 
 See this example of `tmap_arrange`: https://thinking-spatial.org/courses/angewandte_geodatenverarbeitung/kurs04/#by-using-the-tmap_arrange-function
 
 ```{r}
+tmap_mode("plot")
+
+dollars_puma_count_wide_v2<-dollars_puma_count %>%
+  pivot_wider(names_from=dollar_type,
+              values_from=n,
+              values_fill=0) %>% #values_fill replaces any NAs with 0
+  mutate(total_stores=`Dollar General`+`Family Dollar`+`Dollar Tree`,
+         fd_pct=`Family Dollar`/total_stores*100,
+         dg_pct=`Dollar General`/total_stores*100,
+         dt_pct=`Dollar Tree`/total_stores*100)
+
+atl_pumas_join_v2<-atl_pumas %>%
+  left_join(dollars_puma_count_wide_v2)
+
+tm1<-tm_shape(atl_pumas_join_v2)+ tm_polygons("fd_pct")
+tm2<-tm_shape(atl_pumas_join_v2)+ tm_polygons("dg_pct")
+tm3<-tm_shape(atl_pumas_join_v2)+ tm_polygons("dt_pct")
+
+tmap_arrange(tm1,tm2,tm3)
+
 
 ```
 
@@ -141,6 +170,20 @@ grid2<-st_make_grid(atl_pumas,cellsize=0.1) %>%
   st_as_sf(.) %>%
   mutate(rowID=row_number())
 
+dollars_puma%>%
+  st_join(grid2 %>% st_transform(4326), #st_transform changes the projection to the listed EPSG number
+          join=st_within) %>%
+  filter(is.na(GEOID)==FALSE)
+
+#Plot stores by tract
+tm_shape(dollars_puma) + 
+  tm_shape(dollars_puma_df)+tm_polygons(count(dollar_type))
+
+dollars_puma_df<-dollars_puma %>%
+  st_set_geometry(NULL) 
+
+dollars_puma_count<-dollars_puma_df %>%
+  count(GEOID,dollar_type)
 
 ```
 
